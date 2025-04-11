@@ -91,6 +91,10 @@ const MyOrders = () => {
                     )}
                 </div>
             ))}
+
+            {
+                myOrders.length == 0 && <p>No Orders Found</p>
+            }
         </div>
     )
 }
