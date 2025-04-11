@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useAppContext } from '../context/AppContext'
+import toast from 'react-hot-toast'
 
 const MyOrders = () => {
     const [myOrders, setMyOrders] = useState([])
@@ -22,6 +23,7 @@ const MyOrders = () => {
                 userId: user._id,
             })
             if (data.success) {
+                toast.success("Order Cancelled")
                 fetchMyOrders()
             } else {
                 alert(data.message)
