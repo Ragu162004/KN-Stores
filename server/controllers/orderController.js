@@ -59,6 +59,14 @@ export const placeOrderStripe = async (req, res) => {
     // Add Tax Charge (2%)
     amount += Math.floor(amount * 0.02);
 
+    if (amount < 50) {
+      return res.json({
+        success: false,
+        message:
+          "Minimum order amount must be at least ₹50 for online payments.",
+      });
+    }
+
     const order = await Order.create({
       userId,
       items,
@@ -198,22 +206,32 @@ export const cancelOrderByAdmin = async (req, res) => {
     const order = await Order.findById(orderId);
 
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
     if (["Delivered", "Cancelled"].includes(order.status)) {
-      return res.status(400).json({ success: false, message: `Cannot cancel ${order.status} order` });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `Cannot cancel ${order.status} order`,
+        });
     }
 
     order.status = "Cancelled";
     await order.save();
 
-    res.json({ success: true, message: "Order cancelled by admin/seller", order });
+    res.json({
+      success: true,
+      message: "Order cancelled by admin/seller",
+      order,
+    });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
 };
-
 
 // Cancel Order by User: /api/order/cancel/user/:orderId
 export const cancelOrderByUser = async (req, res) => {
@@ -224,15 +242,27 @@ export const cancelOrderByUser = async (req, res) => {
     const order = await Order.findById(orderId);
 
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
     }
 
     if (order.userId.toString() !== userId) {
-      return res.status(403).json({ success: false, message: "Not authorized to cancel this order" });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          message: "Not authorized to cancel this order",
+        });
     }
 
     if (["Shipped", "Delivered", "Cancelled"].includes(order.status)) {
-      return res.status(400).json({ success: false, message: `Cannot cancel ${order.status} order` });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message: `Cannot cancel ${order.status} order`,
+        });
     }
 
     order.status = "Cancelled";
@@ -243,4 +273,3 @@ export const cancelOrderByUser = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
-
