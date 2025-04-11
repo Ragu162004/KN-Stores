@@ -85,7 +85,7 @@ const MyOrders = () => {
                         <div className="flex justify-end mt-4">
                             <button
                                 onClick={() => cancelOrder(order._id)}
-                                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-all"
+                                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-all cursor-pointer"
                             >
                                 Cancel Order
                             </button>
