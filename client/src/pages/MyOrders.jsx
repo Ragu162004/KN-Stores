@@ -26,7 +26,7 @@ const MyOrders = () => {
                 toast.success("Order Cancelled")
                 fetchMyOrders()
             } else {
-                alert(data.message)
+                toast.error(data.message);
             }
         } catch (error) {
             alert("Something went wrong!")
