@@ -69,11 +69,12 @@ import vanilla_muffins_image from "./vanilla_muffins_image.png";
 import quinoa_image from "./quinoa_image.png";
 import brown_rice_image from "./brown_rice_image.png";
 import barley_image from "./barley_image.png";
-
+import cancel from "./cancel.jpg";
 export const assets = {
   logo,
   search_icon,
   remove_icon,
+  cancel,
   arrow_right_icon_colored,
   star_icon,
   star_dull_icon,

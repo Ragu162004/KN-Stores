@@ -34,7 +34,7 @@ const Navbar = () => {
     <nav className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-300 bg-white relative transition-all">
 
       <NavLink to='/' onClick={()=> setOpen(false)}>
-        <img className="h-9" src={assets.logo} alt="logo" />
+        <img className="h-16" src={assets.logo} alt="logo" />
       </NavLink>
 
       <div className="hidden sm:flex items-center gap-8">
@@ -73,13 +73,13 @@ const Navbar = () => {
           <button className="absolute -top-2 -right-3 text-xs text-white bg-primary w-[18px] h-[18px] rounded-full">{getCartCount()}</button>
         </div>
     <button onClick={() => open ? setOpen(false) : setOpen(true)} aria-label="Menu" className="">
-        <img  src={assets.menu_icon} alt='menu'/>
+        {!open ? <img  src={assets.menu_icon} alt='menu'/> : <img src={assets.cancel} className='h-6' alt='cancel'/>}
       </button>
 </div>
       
 
       { open && (
-        <div className={`${open ? 'flex' : 'hidden'} absolute top-[60px] left-0 w-full bg-white shadow-md py-4 flex-col items-start gap-2 px-5 text-sm md:hidden z-20`}>
+        <div className={`${open ? 'flex' : 'hidden'} absolute top-[100px] right-0 w-fit bg-white shadow-md py-4 flex-col items-start gap-2 px-10 text-sm md:hidden z-20`}>
         <NavLink to="/" onClick={()=> setOpen(false)}>Home</NavLink>
         <NavLink to="/products" onClick={()=> setOpen(false)}>All Product</NavLink>
         {user && 
