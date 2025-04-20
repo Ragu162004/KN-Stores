@@ -179,11 +179,11 @@ export const footerLinks = [
 ];
 
 export const features = [
-  {
-    icon: delivery_truck_icon,
-    title: "Fastest Delivery",
-    description: "Groceries delivered in under 30 minutes.",
-  },
+  // {
+  //   icon: delivery_truck_icon,
+  //   title: "Fastest Delivery",
+  //   description: "Groceries delivered in under 30 minutes.",
+  // },
   {
     icon: leaf_icon,
     title: "Freshness Guaranteed",
