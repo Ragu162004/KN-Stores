@@ -12,7 +12,7 @@ pipeline {
             steps {
                 git branch: 'main', url: 'https://github.com/Ragu162004/KN-Stores.git'
             }
-        } 
+        }
 
         stage('Build Frontend & Backend Images') {
             steps {
