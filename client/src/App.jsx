@@ -24,7 +24,6 @@ const App = () => {
   const isSellerPath = useLocation().pathname.includes("seller");
   const { showUserLogin, isSeller } = useAppContext()
 
-  console.log(import.meta.env.VITE_BACKEND_URL);
 
   return (
     <div className='text-default min-h-screen text-gray-700 bg-white'>
