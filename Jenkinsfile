@@ -13,7 +13,7 @@ pipeline {
                 git 'https://github.com/Ragu162004/KN-Stores.git'
             }
         } 
-        stage('Clone Repository') {
+        stage('CMD RUN') {
             steps {
                  sh 'mvn clean package'
             }
