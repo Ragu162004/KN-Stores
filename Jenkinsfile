@@ -17,8 +17,8 @@ pipeline {
         stage('Build Frontend & Backend Images') {
             steps {
                 script {
-                    docker.build(FRONTEND_IMAGE, './client')
-                    docker.build(BACKEND_IMAGE, './server')
+                    docker.build(FRONTEND_IMAGE, '--no-cache ./client')
+                    docker.build(BACKEND_IMAGE, '--no-cache ./server')
                 }
             }
         }
