@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/Ragu162004/KN-Stores.git'
+                git branch: 'main', url: 'https://github.com/Ragu162004/KN-Stores.git'
             }
         } 
         stage('CMD RUN') {
