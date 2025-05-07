@@ -1,15 +1,17 @@
 pipeline {
     agent any
-
+    
     environment {
-        FRONTEND_IMAGE = 'ragu162004/client-app'
-        BACKEND_IMAGE = 'ragu162004/server-app'
+        VERSION = "${BUILD_NUMBER}"
+        FRONTEND_IMAGE = "ragu162004/client-app"
+        BACKEND_IMAGE = "ragu162004/server-app"
         DOCKER_CREDENTIALS_ID = 'docker_cred'
     }
 
     stages {
         stage('Clone Repository') {
             steps {
+                echo "📥 Cloning repository..."
                 git branch: 'main', credentialsId: 'github_cred', url: 'https://github.com/Ragu162004/KN-Stores.git'
             }
         }
@@ -17,8 +19,11 @@ pipeline {
         stage('Build Frontend & Backend Images') {
             steps {
                 script {
-                    docker.build(FRONTEND_IMAGE, '--no-cache ./client')
-                    docker.build(BACKEND_IMAGE, '--no-cache ./server')
+                    echo "🔨 Building frontend image: ${FRONTEND_IMAGE}:${VERSION}"
+                    docker.build("${FRONTEND_IMAGE}:${VERSION}", '--no-cache ./client')
+
+                    echo "🔨 Building backend image: ${BACKEND_IMAGE}:${VERSION}"
+                    docker.build("${BACKEND_IMAGE}:${VERSION}", '--no-cache ./server')
                 }
             }
         }
@@ -26,9 +31,17 @@ pipeline {
         stage('Push Images to Docker Hub') {
             steps {
                 script {
+                    echo "📦 Pushing images to Docker Hub..."
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        docker.image(FRONTEND_IMAGE).push('latest')
-                        docker.image(BACKEND_IMAGE).push('latest')
+                        // Push versioned images
+                        docker.image("${FRONTEND_IMAGE}:${VERSION}").push()
+                        docker.image("${BACKEND_IMAGE}:${VERSION}").push()
+
+                        // Tag and push latest images
+                        docker.image("${FRONTEND_IMAGE}:${VERSION}").tag('latest')
+                        docker.image("${BACKEND_IMAGE}:${VERSION}").tag('latest')
+                        docker.image("${FRONTEND_IMAGE}:latest").push()
+                        docker.image("${BACKEND_IMAGE}:latest").push()
                     }
                 }
             }
@@ -36,17 +49,18 @@ pipeline {
 
         stage('Cleanup') {
             steps {
-                sh 'docker system prune -f'
+                echo "🧹 Cleaning up unused Docker images..."
+                sh 'docker image prune -f'
             }
         }
     }
 
     post {
         success {
-            echo '🎉 client and server pushed to Docker Hub!'
+            echo "✅ Build and push successful! Images tagged with version: ${VERSION}"
         }
         failure {
-            echo '❌ Something went wrong with the build or push.'
+            echo "❌ Build or push failed. Check logs above for details."
         }
     }
 }
