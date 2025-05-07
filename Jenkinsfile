@@ -2,8 +2,9 @@ pipeline {
     agent any
 
     environment {
-        FRONTEND_IMAGE = 'ragu162004/client-app'
-        BACKEND_IMAGE = 'ragu162004/server-app'
+        VERSION = "${BUILD_NUMBER}" 
+        FRONTEND_IMAGE = "ragu162004/client-app"
+        BACKEND_IMAGE = "ragu162004/server-app"
         DOCKER_CREDENTIALS_ID = 'docker_cred'
     }
 
@@ -17,8 +18,8 @@ pipeline {
         stage('Build Frontend & Backend Images') {
             steps {
                 script {
-                    docker.build(FRONTEND_IMAGE, '--no-cache ./client')
-                    docker.build(BACKEND_IMAGE, '--no-cache ./server')
+                    docker.build("${FRONTEND_IMAGE}:${VERSION}", '--no-cache ./client')
+                    docker.build("${BACKEND_IMAGE}:${VERSION}", '--no-cache ./server')
                 }
             }
         }
@@ -27,8 +28,12 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        docker.image(FRONTEND_IMAGE).push('latest')
-                        docker.image(BACKEND_IMAGE).push('latest')
+                        docker.image("${FRONTEND_IMAGE}:${VERSION}").push()
+                        docker.image("${BACKEND_IMAGE}:${VERSION}").push()
+                        // docker.image("${FRONTEND_IMAGE}:${VERSION}").tag('latest')
+                        // docker.image("${BACKEND_IMAGE}:${VERSION}").tag('latest')
+                        // docker.image("${FRONTEND_IMAGE}:latest").push()
+                        // docker.image("${BACKEND_IMAGE}:latest").push()
                     }
                 }
             }
@@ -43,7 +48,7 @@ pipeline {
 
     post {
         success {
-            echo '🎉 client and server pushed to Docker Hub!'
+            echo "🎉 Images pushed with version tag: ${VERSION}"
         }
         failure {
             echo '❌ Something went wrong with the build or push.'
