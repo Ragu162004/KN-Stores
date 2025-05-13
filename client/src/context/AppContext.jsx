@@ -56,6 +56,7 @@ const fetchUser = async ()=>{
         try {
             const { data } = await axios.get('/api/product/list')
             if(data.success){
+                // console.log(data.products);
                 setProducts(data.products)
             }else{
                 toast.error(data.message)
