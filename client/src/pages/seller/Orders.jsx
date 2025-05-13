@@ -55,7 +55,7 @@ const Orders = () => {
                                 {order.items.map((item, index) => (
                                     <div key={index} className="flex flex-col">
                                         <p className="font-medium">
-                                            {item.product.name}{" "}
+                                            {item.name}
                                             <span className="text-primary">x {item.quantity}</span>
                                         </p>
                                     </div>
