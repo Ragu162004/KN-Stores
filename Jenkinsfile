@@ -33,11 +33,9 @@ pipeline {
                 script {
                     echo "📦 Pushing images to Docker Hub..."
                     docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
-                        // Push versioned images
                         docker.image("${FRONTEND_IMAGE}:${VERSION}").push()
                         docker.image("${BACKEND_IMAGE}:${VERSION}").push()
 
-                        // Tag and push latest images
                         docker.image("${FRONTEND_IMAGE}:${VERSION}").tag('latest')
                         docker.image("${BACKEND_IMAGE}:${VERSION}").tag('latest')
                         docker.image("${FRONTEND_IMAGE}:latest").push()

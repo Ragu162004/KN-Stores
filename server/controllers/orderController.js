@@ -10,14 +10,24 @@ export const placeOrderCOD = async (req, res) => {
     if (!address || items.length === 0) {
       return res.json({ success: false, message: "Invalid data" });
     }
-    // Calculate Amount Using Items
-    let amount = await items.reduce(async (acc, item) => {
-      const product = await Product.findById(item.product);
-      return (await acc) + product.offerPrice * item.quantity;
-    }, 0);
 
-    // Add Tax Charge (2%)
-    amount += Math.floor(amount * 0.02);
+    let amount = 0;
+
+    for (const item of items) {
+      const product = await Product.findById(item.product);
+
+      if (!product || product.StockNumber < item.quantity) {
+        return res.json({ success: false, message: "Insufficient stock for product" });
+      }
+
+      product.StockNumber -= item.quantity;
+      if (product.StockNumber === 0) product.inStock = false;
+      await product.save();
+
+      amount += product.offerPrice * item.quantity;
+    }
+
+    amount += Math.floor(amount * 0.02); // Add 2% tax
 
     await Order.create({
       userId,
@@ -44,26 +54,34 @@ export const placeOrderStripe = async (req, res) => {
     }
 
     let productData = [];
+    let amount = 0;
 
-    // Calculate Amount Using Items
-    let amount = await items.reduce(async (acc, item) => {
+    for (const item of items) {
       const product = await Product.findById(item.product);
+
+      if (!product || product.StockNumber < item.quantity) {
+        return res.json({ success: false, message: "Insufficient stock for product" });
+      }
+
       productData.push({
         name: product.name,
         price: product.offerPrice,
         quantity: item.quantity,
       });
-      return (await acc) + product.offerPrice * item.quantity;
-    }, 0);
 
-    // Add Tax Charge (2%)
-    amount += Math.floor(amount * 0.02);
+      product.StockNumber -= item.quantity;
+      if (product.StockNumber === 0) product.inStock = false;
+      await product.save();
+
+      amount += product.offerPrice * item.quantity;
+    }
+
+    amount += Math.floor(amount * 0.02); // Add 2% tax
 
     if (amount < 50) {
       return res.json({
         success: false,
-        message:
-          "Minimum order amount must be at least ₹50 for online payments.",
+        message: "Minimum order amount must be at least ₹50 for online payments.",
       });
     }
 
@@ -75,25 +93,17 @@ export const placeOrderStripe = async (req, res) => {
       paymentType: "Online",
     });
 
-    // Stripe Gateway Initialize
     const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
 
-    // create line items for stripe
+    const line_items = productData.map((item) => ({
+      price_data: {
+        currency: "inr",
+        product_data: { name: item.name },
+        unit_amount: Math.floor(item.price + item.price * 0.02) * 100,
+      },
+      quantity: item.quantity,
+    }));
 
-    const line_items = productData.map((item) => {
-      return {
-        price_data: {
-          currency: "inr",
-          product_data: {
-            name: item.name,
-          },
-          unit_amount: Math.floor(item.price + item.price * 0.02) * 100,
-        },
-        quantity: item.quantity,
-      };
-    });
-
-    // create session
     const session = await stripeInstance.checkout.sessions.create({
       line_items,
       mode: "payment",
@@ -110,11 +120,10 @@ export const placeOrderStripe = async (req, res) => {
     return res.json({ success: false, message: error.message });
   }
 };
-// Stripe Webhooks to Verify Payments Action : /stripe
-export const stripeWebhooks = async (request, response) => {
-  // Stripe Gateway Initialize
-  const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
 
+// Stripe Webhook : /stripe
+export const stripeWebhooks = async (request, response) => {
+  const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
   const sig = request.headers["stripe-signature"];
   let event;
 
@@ -125,34 +134,24 @@ export const stripeWebhooks = async (request, response) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (error) {
-    response.status(400).send(`Webhook Error: ${error.message}`);
+    return response.status(400).send(`Webhook Error: ${error.message}`);
   }
 
-  // Handle the event
   switch (event.type) {
     case "payment_intent.succeeded": {
-      const paymentIntent = event.data.object;
-      const paymentIntentId = paymentIntent.id;
-
-      // Getting Session Metadata
       const session = await stripeInstance.checkout.sessions.list({
-        payment_intent: paymentIntentId,
+        payment_intent: event.data.object.id,
       });
 
       const { orderId, userId } = session.data[0].metadata;
-      // Mark Payment as Paid
       await Order.findByIdAndUpdate(orderId, { isPaid: true });
-      // Clear user cart
       await User.findByIdAndUpdate(userId, { cartItems: {} });
       break;
     }
-    case "payment_intent.payment_failed": {
-      const paymentIntent = event.data.object;
-      const paymentIntentId = paymentIntent.id;
 
-      // Getting Session Metadata
+    case "payment_intent.payment_failed": {
       const session = await stripeInstance.checkout.sessions.list({
-        payment_intent: paymentIntentId,
+        payment_intent: event.data.object.id,
       });
 
       const { orderId } = session.data[0].metadata;
@@ -162,8 +161,8 @@ export const stripeWebhooks = async (request, response) => {
 
     default:
       console.error(`Unhandled event type ${event.type}`);
-      break;
   }
+
   response.json({ received: true });
 };
 
