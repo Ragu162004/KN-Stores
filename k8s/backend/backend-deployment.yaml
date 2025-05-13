@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-node-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-node-backend
+  template:
+    metadata:
+      labels:
+        app: my-node-backend
+    spec:
+      containers:
+        - name: my-node-backend
+          image: ragu162004/backend-image:latest
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              memory: "256Mi" 
+            limits:
+              memory: "512Mi" 
+          env:
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: JWT_SECRET
+          - name: NODE_ENV
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: NODE_ENV
+          - name: PORT
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: PORT
+          - name: SELLER_EMAIL
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: SELLER_EMAIL
+          - name: SELLER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: SELLER_PASSWORD
+          - name: MONGODB_URI
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: MONGODB_URI
+          - name: CLOUDINARY_CLOUD_NAME
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: CLOUDINARY_CLOUD_NAME
+          - name: CLOUDINARY_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: CLOUDINARY_API_KEY
+          - name: CLOUDINARY_API_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: CLOUDINARY_API_SECRET
+          - name: STRIPE_PUBLISHABLE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: STRIPE_PUBLISHABLE_KEY
+          - name: STRIPE_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: STRIPE_SECRET_KEY
+          - name: STRIPE_WEBHOOK_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: STRIPE_WEBHOOK_SECRET

@@ -1,0 +1,15 @@
+version: '3'
+services:
+  frontend:
+    build:
+      context: ./client
+    image: ragu162004/client-app
+    ports:
+      - "3000:80"
+
+  backend:
+    build:
+      context: ./server
+    image: ragu162004/server-app
+    ports:
+      - "5000:5000"
