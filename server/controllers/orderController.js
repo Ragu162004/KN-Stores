@@ -272,3 +272,19 @@ export const cancelOrderByUser = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
+
+// Example in orderController.js
+export const deliverOrderByAdmin = async (req, res) => {
+  try {
+      const order = await Order.findById(req.params.orderId);
+      if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+      order.isPaid = true;
+      order.status = "Delivered";
+      await order.save();
+
+      res.status(200).json({ success: true, message: "Order marked as delivered" });
+  } catch (error) {
+      res.status(500).json({ success: false, message: "Something went wrong", error: error.message });
+  }
+}

@@ -38,6 +38,24 @@ const Orders = () => {
         }
     }
 
+    const markOrderAsDelivered = async (orderId) => {
+        const confirm = window.confirm("Confirm that the order has been delivered?");
+        if (!confirm) return;
+
+        try {
+            const { data } = await axios.put(`/api/order/deliver/seller/${orderId}`);
+            if (data.success) {
+                toast.success("Order marked as delivered!");
+                fetchOrders();
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            toast.error("Failed to mark order as delivered.");
+            console.log(error);
+        }
+    }
+
     useEffect(() => {
         fetchOrders();
     }, [])
@@ -56,7 +74,7 @@ const Orders = () => {
                                     <div key={index} className="flex flex-col">
                                         <p className="font-medium">
                                             {item.name}
-                                            <span className="text-primary">x {item.quantity}</span>
+                                            <span className="text-primary"> x {item.quantity}</span>
                                         </p>
                                     </div>
                                 ))}
@@ -82,13 +100,21 @@ const Orders = () => {
                             <p>Payment: {order.isPaid ? "Paid" : "Pending"}</p>
                             <p>Status: {order.status}</p>
 
-                            {/* Cancel Button */}
-                            {(!order.isPaid && order.status !== "Cancelled") && (
+                            {(!order.isPaid && order.status !== "Cancelled" && order.status !== "Delivered") && (
                                 <button
                                     onClick={() => cancelOrderByAdmin(order._id)}
                                     className="mt-2 bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition"
                                 >
                                     Cancel Order
+                                </button>
+                            )}
+
+                            {(order.status !== "Delivered") && (
+                                <button
+                                    onClick={() => markOrderAsDelivered(order._id)}
+                                    className="mt-2 bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600 transition"
+                                >
+                                    Mark as Delivered
                                 </button>
                             )}
                         </div>

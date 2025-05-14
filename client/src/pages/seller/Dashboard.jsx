@@ -34,9 +34,11 @@ const DashboardHome = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const res = await axios.get('/api/order/seller', { withCredentials: true });
-        setOrders(res.data.orders || []);
-        setUsers(res.data.users || []);
+        const res1 = await axios.get('/api/order/seller', { withCredentials: true });
+        const res2 = await axios.get('/api/user/getAllUser', { withCredentials: true });
+        setOrders(res1.data.orders || []);
+        setUsers(res2.data.user || []);
+        console.log(res2.data.user);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
       }
@@ -59,15 +61,15 @@ const DashboardHome = () => {
     const month = new Date(order.createdAt).getMonth();
     if (order.isPaid) monthlyIncome[month] += order.amount;
 
-    if (order.paymentType === 'cod') paymentTypes.COD += 1;
+    if (order.paymentType === 'COD') paymentTypes.COD += 1;
     else paymentTypes.Stripe += 1;
 
     order.items.forEach(item => {
       const category = item.product?.category || 'Unknown';
       const productName = item.product?.name || 'Unnamed';
-
-      orderCategoryCount[category] = (orderCategoryCount[category] || 0) + item.quantity;
-      stockCount[productName] = (stockCount[productName] || 0) + item.quantity;
+      console.log(item);
+      orderCategoryCount[category] = (orderCategoryCount[category] || 0) + item.product.StockNumber;
+      stockCount[productName] = (stockCount[productName] || 0) + item.product.StockNumber;
     });
   });
 
@@ -110,6 +112,7 @@ const DashboardHome = () => {
         <StatCard title="Total Users" value={totalUsers} icon={<FaUsers />} color="bg-blue-100" />
         <StatCard title="Total Orders" value={totalOrders} icon={<FaShoppingCart />} color="bg-green-100" />
         <StatCard title="Total Income" value={`₹${totalIncome}`} icon={<FaMoneyBillWave />} color="bg-yellow-100" />
+        <StatCard title="Completed Orders" value={totalOrders - cancelledOrders} icon={<FaShoppingCart />} color="bg-green-100" />
         <StatCard title="Pending Payments" value={pendingPayments} icon={<FaClock />} color="bg-purple-100" />
         <StatCard title="Cancelled Orders" value={cancelledOrders} icon={<FaBan />} color="bg-red-100" />
       </div>
@@ -119,7 +122,7 @@ const DashboardHome = () => {
         <ChartCard title="📈 Monthly Revenue Trend">
           <Line data={lineChartData} />
         </ChartCard>
-        <ChartCard title="📦 Product Stock Distribution">
+        <ChartCard title="📦 Product Wise Stocks">
           <Bar data={barChartData} />
         </ChartCard>
       </div>
