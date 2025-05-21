@@ -8,7 +8,6 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'docker_cred'
         GIT_CREDENTIALS_ID = 'github_cred'
     }
-    
 
     stages {
         stage('Clone Repository') {
