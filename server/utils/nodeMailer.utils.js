@@ -88,7 +88,7 @@ export const sendOrderDeliveryEmail = async (to, order) => {
 export const sendContactEmail = async (name, email, message, phone = 'N/A') => {
     const mailOptions = {
         from: process.env.EMAIL_USER,
-        to: "ragulandiranm.22cse@kongu.edu",
+        to: "ragu16102004@gmail.com",
         subject: `Contact Request from ${name}`,
         html: `
       <h3>New Message from KN Stores Contact Form</h3>
