@@ -2,8 +2,12 @@ import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 import stripe from "stripe";
 import User from "../models/User.js";
+import {
+  sendOrderConfirmationEmail,
+  sendOrderCancellationEmail,
+  sendOrderDeliveryEmail,
+} from "../utils/nodeMailer.utils.js";
 
-// Place Order COD : /api/order/cod
 export const placeOrderCOD = async (req, res) => {
   try {
     const { userId, items, address } = req.body;
@@ -15,7 +19,6 @@ export const placeOrderCOD = async (req, res) => {
 
     for (const item of items) {
       const product = await Product.findById(item.product);
-
       if (!product || product.StockNumber < item.quantity) {
         return res.json({ success: false, message: "Insufficient stock for product" });
       }
@@ -29,13 +32,17 @@ export const placeOrderCOD = async (req, res) => {
 
     amount += Math.floor(amount * 0.02); // Add 2% tax
 
-    await Order.create({
+    const order = await Order.create({
       userId,
       items,
       amount,
       address,
       paymentType: "COD",
     });
+
+    const populatedOrder = await Order.findById(order._id).populate("items.product");
+    const user = await User.findById(userId);
+    await sendOrderConfirmationEmail(user.email, populatedOrder);
 
     return res.json({ success: true, message: "Order Placed Successfully" });
   } catch (error) {
@@ -58,7 +65,6 @@ export const placeOrderStripe = async (req, res) => {
 
     for (const item of items) {
       const product = await Product.findById(item.product);
-
       if (!product || product.StockNumber < item.quantity) {
         return res.json({ success: false, message: "Insufficient stock for product" });
       }
@@ -92,6 +98,10 @@ export const placeOrderStripe = async (req, res) => {
       address,
       paymentType: "Online",
     });
+
+    const populatedOrder = await Order.findById(order._id).populate("items.product");
+    const user = await User.findById(userId);
+    await sendOrderConfirmationEmail(user.email, populatedOrder);
 
     const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -173,7 +183,6 @@ export const getUserOrders = async (req, res) => {
     const orders = await Order.find({
       userId,
       $or: [{ paymentType: "COD" }, { isPaid: true }],
-      status: { $ne: "Cancelled" },
     })
       .populate("items.product address")
       .sort({ createdAt: -1 });
@@ -183,7 +192,7 @@ export const getUserOrders = async (req, res) => {
   }
 };
 
-// Get All Orders ( for seller / admin) : /api/order/seller
+// Get All Orders : /api/order/seller
 export const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find({
@@ -197,36 +206,25 @@ export const getAllOrders = async (req, res) => {
   }
 };
 
-// Cancel Order by Admin/Seller: /api/order/cancel/seller/:orderId
+// Cancel Order by Admin: /api/order/cancel/seller/:orderId
 export const cancelOrderByAdmin = async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    const order = await Order.findById(orderId);
-
-    if (!order) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Order not found" });
-    }
+    const order = await Order.findById(orderId).populate("items.product");
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
     if (["Delivered", "Cancelled"].includes(order.status)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: `Cannot cancel ${order.status} order`,
-        });
+      return res.status(400).json({ success: false, message: `Cannot cancel ${order.status} order` });
     }
 
     order.status = "Cancelled";
     await order.save();
 
-    res.json({
-      success: true,
-      message: "Order cancelled by admin/seller",
-      order,
-    });
+    const user = await User.findById(order.userId);
+    await sendOrderCancellationEmail(user.email, order);
+
+    res.json({ success: true, message: "Order cancelled by admin", order });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
@@ -238,53 +236,43 @@ export const cancelOrderByUser = async (req, res) => {
     const { orderId } = req.params;
     const { userId } = req.body;
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).populate("items.product");
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
-    if (!order) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Order not found" });
-    }
-
-    if (order.userId.toString() !== userId) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Not authorized to cancel this order",
-        });
-    }
+    if (order.userId.toString() !== userId)
+      return res.status(403).json({ success: false, message: "Not authorized to cancel this order" });
 
     if (["Shipped", "Delivered", "Cancelled"].includes(order.status)) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: `Cannot cancel ${order.status} order`,
-        });
+      return res.status(400).json({ success: false, message: `Cannot cancel ${order.status} order` });
     }
 
     order.status = "Cancelled";
     await order.save();
 
-    res.json({ success: true, message: "Order cancelled successfully", order });
+    const user = await User.findById(userId);
+    await sendOrderCancellationEmail(user.email, order);
+
+    res.json({ success: true, message: "Order cancelled", order });
   } catch (error) {
     res.json({ success: false, message: error.message });
   }
 };
 
-
-// Example in orderController.js
+// Mark as Delivered by Admin: /api/order/deliver/:orderId
 export const deliverOrderByAdmin = async (req, res) => {
   try {
-      const order = await Order.findById(req.params.orderId);
-      if (!order) return res.status(404).json({ success: false, message: "Order not found" });
-      order.isPaid = true;
-      order.status = "Delivered";
-      await order.save();
+    const order = await Order.findById(req.params.orderId).populate("items.product");
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
-      res.status(200).json({ success: true, message: "Order marked as delivered" });
+    order.isPaid = true;
+    order.status = "Delivered";
+    await order.save();
+
+    const user = await User.findById(order.userId);
+    await sendOrderDeliveryEmail(user.email, order);
+
+    res.status(200).json({ success: true, message: "Order marked as delivered" });
   } catch (error) {
-      res.status(500).json({ success: false, message: "Something went wrong", error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+};

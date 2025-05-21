@@ -20,6 +20,7 @@ import Orders from './pages/seller/Orders';
 import Loading from './components/Loading';
 import Dashboard from './pages/seller/Dashboard';
 import UpdateProduct from './pages/seller/UpdateProduct';
+import ContactUs from './pages/ContactUs';
 
 const App = () => {
 
@@ -41,6 +42,7 @@ const App = () => {
           <Route path='/add-address' element={<AddAddress />} />
           <Route path='/my-orders' element={<MyOrders />} />
           <Route path='/loader' element={<Loading />} />
+          <Route path='/contact-us' element={<ContactUs />} />
           <Route path='/seller' element={isSeller ? <SellerLayout /> : <SellerLogin />}>
             <Route index element={isSeller ? <Dashboard /> : null} />
             <Route path='add-product' element={<AddProduct />} />
