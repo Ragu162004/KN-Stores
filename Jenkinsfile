@@ -1,18 +1,19 @@
 pipeline {
     agent any
-    
+
     environment {
         VERSION = "${BUILD_NUMBER}"
         FRONTEND_IMAGE = "ragu162004/client-app"
         BACKEND_IMAGE = "ragu162004/server-app"
         DOCKER_CREDENTIALS_ID = 'docker_cred'
+        GIT_CREDENTIALS_ID = 'github_cred'
     }
 
     stages {
         stage('Clone Repository') {
             steps {
                 echo "📥 Cloning repository..."
-                git branch: 'main', credentialsId: 'github_cred', url: 'https://github.com/Ragu162004/KN-Stores.git'
+                git branch: 'main', credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/Ragu162004/KN-Stores.git'
             }
         }
 
@@ -45,6 +46,20 @@ pipeline {
             }
         }
 
+        stage('Tag Git Repository') {
+            steps {
+                script {
+                    echo "🏷️ Creating and pushing Git tag v${VERSION}..."
+                    sh """
+                        git config user.email "ragu16102004@gmail.com"
+                        git config user.name "Ragu162004"
+                        git tag v${VERSION}
+                        git push origin v${VERSION}
+                    """
+                }
+            }
+        }
+
         stage('Cleanup') {
             steps {
                 echo "🧹 Cleaning up unused Docker images..."
@@ -55,7 +70,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ Build and push successful! Images tagged with version: ${VERSION}"
+            echo "✅ Build, push, and tagging successful! Version: ${VERSION}"
         }
         failure {
             echo "❌ Build or push failed. Check logs above for details."
