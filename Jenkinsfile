@@ -6,11 +6,11 @@ pipeline {
         FRONTEND_IMAGE = "ragu162004/client-app"
         BACKEND_IMAGE = "ragu162004/server-app"
         DOCKER_CREDENTIALS_ID = 'docker_cred'
-        GIT_CREDENTIALS_ID = 'github_cred'               // Jenkins credential ID for GitHub PAT (username+token)
+        GIT_CREDENTIALS_ID = 'github_cred'               
         GIT_REPO_URL = 'https://github.com/Ragu162004/KN-Stores.git'
 
-        RAGU_GITHUB_USERNAME = 'Ragu162004'             // Your GitHub username
-        RAGU_GITHUB_PAT = credentials('RAGU_GITHUB_PAT') // Secret text credential ID for PAT token
+        RAGU_GITHUB_USERNAME = 'Ragu162004'             
+        RAGU_GITHUB_PAT = credentials('RAGU_GITHUB_PAT') 
     }
 
     stages {
