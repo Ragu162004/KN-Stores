@@ -6,8 +6,8 @@ const MyOrders = () => {
     const [myOrders, setMyOrders] = useState([])
     const [expandedSections, setExpandedSections] = useState({
         "Order Placed": true,
-        "Delivered": true,
-        "Cancelled": true,
+        "Delivered": false,
+        "Cancelled": false,
     })
     const [viewAll, setViewAll] = useState({})
 

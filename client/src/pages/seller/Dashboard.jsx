@@ -13,7 +13,15 @@ import {
 } from 'chart.js';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import axios from 'axios';
-import { FaUsers, FaShoppingCart, FaMoneyBillWave, FaClock, FaBan } from 'react-icons/fa';
+import {
+  FaUsers,
+  FaShoppingCart,
+  FaMoneyBillWave,
+  FaClock,
+  FaBan,
+  FaTruck,
+  FaCheckCircle
+} from 'react-icons/fa';
 
 ChartJS.register(
   CategoryScale,
@@ -30,6 +38,9 @@ ChartJS.register(
 const DashboardHome = () => {
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const currentYear = new Date().getFullYear();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -38,7 +49,6 @@ const DashboardHome = () => {
         const res2 = await axios.get('/api/user/getAllUser', { withCredentials: true });
         setOrders(res1.data.orders || []);
         setUsers(res2.data.user || []);
-        console.log(res2.data.user);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
       }
@@ -46,38 +56,70 @@ const DashboardHome = () => {
     fetchDashboardData();
   }, []);
 
-  const totalOrders = orders.length;
-  const totalUsers = users.length;
-  const totalIncome = orders.filter(o => o.isPaid).reduce((sum, o) => sum + o.amount, 0);
-  const pendingPayments = orders.filter(o => !o.isPaid).length;
-  const cancelledOrders = orders.filter(o => o.status === 'Cancelled').length;
+  const filteredOrders = orders.filter(order => {
+    const orderDate = new Date(order.createdAt);
+    return orderDate.getFullYear() === parseInt(selectedYear);
+  });
 
   const monthlyIncome = Array(12).fill(0);
-  const orderCategoryCount = {};
+  const dailyIncome = Array(31).fill(0);
   const stockCount = {};
   const paymentTypes = { COD: 0, Stripe: 0 };
+  const orderStatusCounts = {};
+  const orderCategoryCount = {};
 
-  orders.forEach(order => {
-    const month = new Date(order.createdAt).getMonth();
-    if (order.isPaid) monthlyIncome[month] += order.amount;
+  let totalIncome = 0;
+  let pendingPayments = 0;
+  let cancelledOrders = 0;
+  let completedOrders = 0;
+  let remainingDeliveryOrders = 0;
+
+  filteredOrders.forEach(order => {
+    const orderDate = new Date(order.createdAt);
+    const month = orderDate.getMonth();
+    const day = orderDate.getDate() - 1;
+
+    if (order.isPaid) {
+      monthlyIncome[month] += order.amount;
+      if (selectedMonth === month.toString()) {
+        dailyIncome[day] += order.amount;
+      }
+    }
+
+    if (!order.isPaid && order.status !== 'Cancelled' && order.status !== 'Delivered') {
+      pendingPayments++;
+    }
+
+    if (order.status === 'Cancelled') cancelledOrders++;
+
+    if (order.isPaid && order.status === 'Delivered') completedOrders++;
+
+    if ((order.status === 'Order Placed')) {
+      remainingDeliveryOrders++;
+    }
 
     if (order.paymentType === 'COD') paymentTypes.COD += 1;
     else paymentTypes.Stripe += 1;
 
+    orderStatusCounts[order.status] = (orderStatusCounts[order.status] || 0) + 1;
+
     order.items.forEach(item => {
       const category = item.product?.category || 'Unknown';
       const productName = item.product?.name || 'Unnamed';
-      console.log(item);
       orderCategoryCount[category] = (orderCategoryCount[category] || 0) + item.product.StockNumber;
       stockCount[productName] = (stockCount[productName] || 0) + item.product.StockNumber;
     });
+
+    if (order.isPaid) totalIncome += order.amount;
   });
 
   const lineChartData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    labels: selectedMonth === ''
+      ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+      : Array.from({ length: 31 }, (_, i) => `${i + 1}`),
     datasets: [{
-      label: 'Monthly Revenue',
-      data: monthlyIncome,
+      label: selectedMonth === '' ? 'Monthly Revenue' : `Day-wise Revenue for ${parseInt(selectedMonth) + 1}/${selectedYear}`,
+      data: selectedMonth === '' ? monthlyIncome : dailyIncome,
       borderColor: '#4f46e5',
       backgroundColor: 'rgba(79, 70, 229, 0.1)',
       tension: 0.3,
@@ -101,25 +143,55 @@ const DashboardHome = () => {
     }],
   };
 
-  const isLoadingPaymentChart = paymentTypes.COD === 0 && paymentTypes.Stripe === 0;
+  const statusChartData = {
+    labels: Object.keys(orderStatusCounts),
+    datasets: [{
+      data: Object.values(orderStatusCounts),
+      backgroundColor: ['#4ade80', '#facc15', '#f87171', '#60a5fa', '#a78bfa', '#fb923c'],
+    }],
+  };
 
   return (
     <div className="py-10 px-6 bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-semibold text-gray-800 mb-8">📊 Seller Dashboard</h1>
+      <h1 className="text-3xl font-semibold text-gray-800 mb-6">📊 Seller Dashboard</h1>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4 mb-6">
+        <select
+          value={selectedYear}
+          onChange={e => setSelectedYear(e.target.value)}
+          className="p-2 border rounded"
+        >
+          {[currentYear, currentYear - 1, currentYear - 2].map(year => (
+            <option key={year} value={year}>{year}</option>
+          ))}
+        </select>
+        <select
+          value={selectedMonth}
+          onChange={e => setSelectedMonth(e.target.value)}
+          className="p-2 border rounded"
+        >
+          <option value="">All Months</option>
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i} value={i}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
+          ))}
+        </select>
+      </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6 mb-12">
-        <StatCard title="Total Users" value={totalUsers} icon={<FaUsers />} color="bg-blue-100" />
-        <StatCard title="Total Orders" value={totalOrders} icon={<FaShoppingCart />} color="bg-green-100" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-6 mb-10">
+        <StatCard title="Total Users" value={users.length} icon={<FaUsers />} color="bg-blue-100" />
+        <StatCard title="Total Orders" value={filteredOrders.length} icon={<FaShoppingCart />} color="bg-green-100" />
         <StatCard title="Total Income" value={`₹${totalIncome}`} icon={<FaMoneyBillWave />} color="bg-yellow-100" />
-        <StatCard title="Completed Orders" value={totalOrders - cancelledOrders} icon={<FaShoppingCart />} color="bg-green-100" />
+        <StatCard title="Completed Orders" value={completedOrders} icon={<FaCheckCircle />} color="bg-green-200" />
         <StatCard title="Pending Payments" value={pendingPayments} icon={<FaClock />} color="bg-purple-100" />
         <StatCard title="Cancelled Orders" value={cancelledOrders} icon={<FaBan />} color="bg-red-100" />
+        <StatCard title="Remaining Deliveries" value={remainingDeliveryOrders} icon={<FaTruck />} color="bg-orange-100" />
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-10">
-        <ChartCard title="📈 Monthly Revenue Trend">
+        <ChartCard title={selectedMonth === '' ? "📈 Monthly Revenue Trend" : "📅 Day-wise Revenue"}>
           <Line data={lineChartData} />
         </ChartCard>
         <ChartCard title="📦 Product Wise Stocks">
@@ -127,16 +199,12 @@ const DashboardHome = () => {
         </ChartCard>
       </div>
 
-      <div className="grid grid-cols-1">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         <ChartCard title="💳 Payment Methods (COD vs Online)">
-          {isLoadingPaymentChart ? (
-            <div className="relative flex items-center justify-center h-64">
-              <div className="w-20 h-20 border-8 border-blue-300 border-t-transparent rounded-full animate-spin"></div>
-              <span className="absolute text-sm text-gray-500">Loading...</span>
-            </div>
-          ) : (
-            <Pie data={pieChartData} />
-          )}
+          <Pie data={pieChartData} />
+        </ChartCard>
+        <ChartCard title="📊 Order Status Distribution">
+          <Pie data={statusChartData} />
         </ChartCard>
       </div>
     </div>

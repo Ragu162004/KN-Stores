@@ -7,21 +7,48 @@ export const addProduct = async (req, res) => {
     let productData = JSON.parse(req.body.productData);
     const images = req.files;
 
-    let imagesUrl = await Promise.all(
-      images.map(async (item) => {
-        let result = await cloudinary.uploader.upload(item.path, {
-          resource_type: "image",
-        });
-        return result.secure_url;
-      })
-    );
+    const {
+      name,
+      description,
+      category,
+      price,
+      offerPrice,
+      StockNumber,  
+    } = productData;
 
-    await Product.create({ ...productData, image: imagesUrl });
+    if (!name || !category || !price || !StockNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, Category, Price, and StockNumber are required",
+      });
+    }
 
-    res.json({ success: true, message: "Product Added" });
+    let imagesUrl = [];
+    if (images && images.length > 0) {
+      imagesUrl = await Promise.all(
+        images.map(async (item) => {
+          const result = await cloudinary.uploader.upload(item.path, {
+            resource_type: "image",
+          });
+          return result.secure_url;
+        })
+      );
+    }
+
+    const newProduct = await Product.create({
+      name,
+      description,
+      category,
+      price,
+      offerPrice,
+      StockNumber,
+      image: imagesUrl,
+    });
+
+    res.json({ success: true, message: "Product Added", product: newProduct });
   } catch (error) {
     console.log(error.message);
-    res.json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -63,6 +90,7 @@ export const productByIdUp = async (req, res) => {
 export const changeStock = async (req, res) => {
   try {
     const { id, inStock } = req.body;
+    console.log(inStock);
     await Product.findByIdAndUpdate(id, { inStock });
     res.json({ success: true, message: "Stock Updated" });
   } catch (error) {
