@@ -38,7 +38,7 @@ ChartJS.register(
 const DashboardHome = () => {
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
   const currentYear = new Date().getFullYear();
 
@@ -58,7 +58,9 @@ const DashboardHome = () => {
 
   const filteredOrders = orders.filter(order => {
     const orderDate = new Date(order.createdAt);
-    return orderDate.getFullYear() === parseInt(selectedYear);
+    const matchesYear = selectedYear === '' || orderDate.getFullYear() === parseInt(selectedYear);
+    const matchesMonth = selectedMonth === '' || orderDate.getMonth() === parseInt(selectedMonth);
+    return matchesYear && matchesMonth;
   });
 
   const monthlyIncome = Array(12).fill(0);
@@ -66,7 +68,6 @@ const DashboardHome = () => {
   const stockCount = {};
   const paymentTypes = { COD: 0, Stripe: 0 };
   const orderStatusCounts = {};
-  const orderCategoryCount = {};
 
   let totalIncome = 0;
   let pendingPayments = 0;
@@ -81,7 +82,7 @@ const DashboardHome = () => {
 
     if (order.isPaid) {
       monthlyIncome[month] += order.amount;
-      if (selectedMonth === month.toString()) {
+      if (selectedMonth !== '') {
         dailyIncome[day] += order.amount;
       }
     }
@@ -94,9 +95,7 @@ const DashboardHome = () => {
 
     if (order.isPaid && order.status === 'Delivered') completedOrders++;
 
-    if ((order.status === 'Order Placed')) {
-      remainingDeliveryOrders++;
-    }
+    if (order.status === 'Order Placed') remainingDeliveryOrders++;
 
     if (order.paymentType === 'COD') paymentTypes.COD += 1;
     else paymentTypes.Stripe += 1;
@@ -104,9 +103,7 @@ const DashboardHome = () => {
     orderStatusCounts[order.status] = (orderStatusCounts[order.status] || 0) + 1;
 
     order.items.forEach(item => {
-      const category = item.product?.category || 'Unknown';
       const productName = item.product?.name || 'Unnamed';
-      orderCategoryCount[category] = (orderCategoryCount[category] || 0) + item.product.StockNumber;
       stockCount[productName] = (stockCount[productName] || 0) + item.product.StockNumber;
     });
 
@@ -118,7 +115,7 @@ const DashboardHome = () => {
       ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
       : Array.from({ length: 31 }, (_, i) => `${i + 1}`),
     datasets: [{
-      label: selectedMonth === '' ? 'Monthly Revenue' : `Day-wise Revenue for ${parseInt(selectedMonth) + 1}/${selectedYear}`,
+      label: selectedMonth === '' ? 'Monthly Revenue' : `Day-wise Revenue for ${parseInt(selectedMonth) + 1}/${selectedYear || 'All Time'}`,
       data: selectedMonth === '' ? monthlyIncome : dailyIncome,
       borderColor: '#4f46e5',
       backgroundColor: 'rgba(79, 70, 229, 0.1)',
@@ -153,18 +150,12 @@ const DashboardHome = () => {
 
   return (
     <div className="py-10 px-6 bg-gray-50 min-h-screen w-full">
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">📊 Seller Dashboard</h1>
+      <h1 className="text-3xl font-semibold text-gray-800 mb-2">📊 Seller Dashboard</h1>
+      <p className="text-sm text-gray-600 mb-6">
+        Showing data for {selectedMonth === '' ? 'all months' : new Date(0, selectedMonth).toLocaleString('default', { month: 'long' })}{' '}
+        {selectedYear || 'All Time'}
+      </p>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-6 mb-10">
-        <StatCard title="Total Users" value={users.length} icon={<FaUsers />} color="bg-blue-100" />
-        <StatCard title="Total Orders" value={filteredOrders.length} icon={<FaShoppingCart />} color="bg-green-100" />
-        <StatCard title="Total Income" value={`₹${totalIncome}`} icon={<FaMoneyBillWave />} color="bg-yellow-100" />
-        <StatCard title="Completed Orders" value={completedOrders} icon={<FaCheckCircle />} color="bg-green-200" />
-        <StatCard title="Pending Payments" value={pendingPayments} icon={<FaClock />} color="bg-purple-100" />
-        <StatCard title="Cancelled Orders" value={cancelledOrders} icon={<FaBan />} color="bg-red-100" />
-        <StatCard title="Remaining Deliveries" value={remainingDeliveryOrders} icon={<FaTruck />} color="bg-orange-100" />
-      </div>
       {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-6">
         <select
@@ -172,6 +163,7 @@ const DashboardHome = () => {
           onChange={e => setSelectedYear(e.target.value)}
           className="p-2 border rounded"
         >
+          <option value="">All Time</option>
           {[currentYear, currentYear - 1, currentYear - 2].map(year => (
             <option key={year} value={year}>{year}</option>
           ))}
@@ -186,6 +178,17 @@ const DashboardHome = () => {
             <option key={i} value={i}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
           ))}
         </select>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-6 mb-10">
+        <StatCard title="Total Users" value={users.length} icon={<FaUsers />} color="bg-blue-100" />
+        <StatCard title="Total Orders" value={filteredOrders.length} icon={<FaShoppingCart />} color="bg-green-100" />
+        <StatCard title="Total Income" value={`₹${totalIncome}`} icon={<FaMoneyBillWave />} color="bg-yellow-100" />
+        <StatCard title="Completed Orders" value={completedOrders} icon={<FaCheckCircle />} color="bg-green-200" />
+        <StatCard title="Pending Payments" value={pendingPayments} icon={<FaClock />} color="bg-purple-100" />
+        <StatCard title="Cancelled Orders" value={cancelledOrders} icon={<FaBan />} color="bg-red-100" />
+        <StatCard title="Remaining Deliveries" value={remainingDeliveryOrders} icon={<FaTruck />} color="bg-orange-100" />
       </div>
 
       {/* Charts */}
