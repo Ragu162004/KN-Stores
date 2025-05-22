@@ -21,6 +21,7 @@ import Loading from './components/Loading';
 import Dashboard from './pages/seller/Dashboard';
 import UpdateProduct from './pages/seller/UpdateProduct';
 import ContactUs from './pages/ContactUs';
+import Categories from './components/Categories';
 
 const App = () => {
 
@@ -36,6 +37,7 @@ const App = () => {
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/products' element={<AllProducts />} />
+          <Route path='/categories' element={<Categories />} />
           <Route path='/products/:category' element={<ProductCategory />} />
           <Route path='/products/:category/:id' element={<ProductDetails />} />
           <Route path='/cart' element={<Cart />} />
