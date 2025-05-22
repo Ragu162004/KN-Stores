@@ -23,6 +23,7 @@ await connectCloudinary();
 const allowedOrigins = [
   "http://localhost:5173",
   "https://kn-stores.vercel.app",
+  "https://staging.d3ktiddp35flns.amplifyapp.com"
 ];
 
 app.post("/stripe", express.raw({ type: "application/json" }), stripeWebhooks);
