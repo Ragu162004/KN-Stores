@@ -155,6 +155,16 @@ const DashboardHome = () => {
     <div className="py-10 px-6 bg-gray-50 min-h-screen w-full">
       <h1 className="text-3xl font-semibold text-gray-800 mb-6">📊 Seller Dashboard</h1>
 
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-6 mb-10">
+        <StatCard title="Total Users" value={users.length} icon={<FaUsers />} color="bg-blue-100" />
+        <StatCard title="Total Orders" value={filteredOrders.length} icon={<FaShoppingCart />} color="bg-green-100" />
+        <StatCard title="Total Income" value={`₹${totalIncome}`} icon={<FaMoneyBillWave />} color="bg-yellow-100" />
+        <StatCard title="Completed Orders" value={completedOrders} icon={<FaCheckCircle />} color="bg-green-200" />
+        <StatCard title="Pending Payments" value={pendingPayments} icon={<FaClock />} color="bg-purple-100" />
+        <StatCard title="Cancelled Orders" value={cancelledOrders} icon={<FaBan />} color="bg-red-100" />
+        <StatCard title="Remaining Deliveries" value={remainingDeliveryOrders} icon={<FaTruck />} color="bg-orange-100" />
+      </div>
       {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-6">
         <select
@@ -176,17 +186,6 @@ const DashboardHome = () => {
             <option key={i} value={i}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
           ))}
         </select>
-      </div>
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7 gap-6 mb-10">
-        <StatCard title="Total Users" value={users.length} icon={<FaUsers />} color="bg-blue-100" />
-        <StatCard title="Total Orders" value={filteredOrders.length} icon={<FaShoppingCart />} color="bg-green-100" />
-        <StatCard title="Total Income" value={`₹${totalIncome}`} icon={<FaMoneyBillWave />} color="bg-yellow-100" />
-        <StatCard title="Completed Orders" value={completedOrders} icon={<FaCheckCircle />} color="bg-green-200" />
-        <StatCard title="Pending Payments" value={pendingPayments} icon={<FaClock />} color="bg-purple-100" />
-        <StatCard title="Cancelled Orders" value={cancelledOrders} icon={<FaBan />} color="bg-red-100" />
-        <StatCard title="Remaining Deliveries" value={remainingDeliveryOrders} icon={<FaTruck />} color="bg-orange-100" />
       </div>
 
       {/* Charts */}
