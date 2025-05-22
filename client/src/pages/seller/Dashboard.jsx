@@ -152,7 +152,7 @@ const DashboardHome = () => {
   };
 
   return (
-    <div className="py-10 px-6 bg-gray-50 min-h-screen">
+    <div className="py-10 px-6 bg-gray-50 min-h-screen w-full">
       <h1 className="text-3xl font-semibold text-gray-800 mb-6">📊 Seller Dashboard</h1>
 
       {/* Filters */}
